@@ -7,10 +7,8 @@ library(sf)
 # this is the projection for the seagrass segment layer from the district
 prj <- 2882
 
-flcat <- list(
-  code = c('9113', '9116', '9121'),
-  name = c('patchy', 'cont', 'algae')
-)
+# patchy, continuous, and floating algae
+flcat <-c('9113', '9116', '9121')
 
 # sg management areas
 mngs <- sgmanagement %>% 
@@ -72,7 +70,7 @@ for(i in seq_along(fimsgyrs)){
   dat_crp <- dat_raw %>%
     st_transform(crs = prj) %>%
     dplyr::select(FLUCCSCODE) %>% 
-    filter(FLUCCSCODE %in% flcat[['code']]) %>%
+    filter(FLUCCSCODE %in% flcat) %>%
     st_intersection(mngs) %>% 
     summarise(
       geometry = st_union(geometry), 
