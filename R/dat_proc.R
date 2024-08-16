@@ -118,3 +118,8 @@ fimsgdat <- fimsgdat %>%
   ) %>% 
   st_set_geometry(NULL)
 write.csv(fimsgdat, file = here('data/fimsgdat.csv'), row.names = F)
+
+mapview()
+
+
+
