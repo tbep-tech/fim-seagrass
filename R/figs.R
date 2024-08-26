@@ -279,7 +279,7 @@ Dominantper <- FLUC %>%
   group_by(Dominant,TBEP_seg,SAVcover) %>%
   summarize(Count=n())%>%
   mutate(perc = (Count / 1475 * 100),
-  segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')))
+  segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB'))) 
 
 st2 <- ggplot(Dominantper, aes(x = reorder(SAVcover,Count), y = perc, fill = Dominant)) +
   geom_bar (stat="identity") +  # Bar plot for percent
@@ -430,32 +430,24 @@ png(here('figs/tbnisgyr.png'), height = 5, width = 7, family = 'serif', units = 
 print(tbnisgcov)
 dev.off()
 
-#Species contributing to community structure differences - FLUCCSCODE-----------------------
+#Species contributing to community structure differences - FLUCCSCODE by bay segment-------------------
+#only summer/fall collections
 ## in progress
+
 spp_codes <- read_csv(here("data/species_codes.csv"))
+SIMP <- read_csv(here("output/SIMPER.csv"))
 
 
-
-SIMPER <- 
-  TBNI <- div %>% 
-  group_by(sgyear, TBEP_seg) %>%
-  summarize(mean_value = mean(TBNI_Score, na.rm = TRUE),
-            std_error = sd(TBNI_Score, na.rm = TRUE) / sqrt(n()),
-            Count=n())
-
-TBNI <- TBNI%>%
-  mutate(segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB'))
+spp_otb <- SIMP %>% 
+  filter(TBEP_seg='OTB')
+  group_by(FLUCCSCODE) %>%
+  mutate(FLUCs = factor(FLUCCSCODE, levels = c('none', 'patchy', 'continuous'))
   )
 
-p2 <- ggplot(TBNI, aes(x = factor(sgyear), y = mean_value)) +
-  geom_line() + 
-  geom_point() +
-  geom_errorbar(
-    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
-    width = 0.2
-  ) +  # Error bars 
-  facet_wrap(~segment, ncol = 4) +
-  theme_bw() + 
+sim <- ggplot(spp_sim, aes(x = factor(species), y = mean_value)) +
+  geom_bar() + 
+  facet_wrap(~FLUCCs, ncol = 3) +
+  theme_minimal() + 
   theme(panel.grid.minor =element_blank(),
         panel.grid.major.x =element_blank(),
         # plot.background = element_rect(fill = NA, color = NA),
@@ -466,8 +458,8 @@ p2 <- ggplot(TBNI, aes(x = factor(sgyear), y = mean_value)) +
         legend.position = 'none'
   ) +
   labs(
-    y = 'Tampa Bay Nekton Index',
-    x = 'Seagrass Assessment Year',
+    y = 'CPUE',
+    x = 'FLUCCSCODE',
     color = NULL,
     title = '(b) TBNI by bay segment',
   )
