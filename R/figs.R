@@ -1,5 +1,4 @@
 # setup ---------------------------------------------------------------------------------------
-
 library(tidyverse)
 library(lubridate)
 library(EnvStats)
@@ -50,10 +49,10 @@ FLUC <- spp %>%
       DominantVeg == "Halodule spp." ~ "Halodule",
       DominantVeg == "Syringodium spp." ~ "Syringodium",
       DominantVeg == "Ruppia spp." ~ "Ruppia",
-      #  DominantVeg == "Seagrasses: Mixed" ~ "Mixed",
       DominantVeg == "None" ~ "None",
       DominantVeg %in% c("Algae","Algae: Filamentous green","Algae: Filamentous red","Caulerpa spp.",
-                         "Gracillaria","Sargasum spp.") ~ "Algae",
+                         "Gracillaria","Sargassum spp.") ~ "Algae",
+      DominantVeg %in% c("Caulerpa spp.", "Halophila spp.","Seagrasses: Mixed") ~"Mixed/OtherSAV",
       TRUE ~ "Mixed/OtherSAV"  # Default case if none of the above 
     ),
     TBEP_seg = factor(TBEP_seg, levels = segshr),
