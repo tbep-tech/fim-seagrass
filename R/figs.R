@@ -57,7 +57,7 @@ FLUC <- spp %>%
       TRUE ~ "Mixed/OtherSAV"  # Default case if none of the above 
     ),
     TBEP_seg = factor(TBEP_seg, levels = segshr),
-    SAVcover = factor(SAVcover, levels = c('continuous', 'patchy', 'algae', 'none'))
+    SAVcover = factor(SAVcover, levels = c('none','patchy','continuous', 'algae'))
   )
 
 BVcover <- FLUC %>% 
@@ -348,7 +348,7 @@ TBNI_sav <- div %>%
       TRUE ~ "none"  # Default case if none of the above
     ),
     TBEP_seg = factor(TBEP_seg, levels = segshr),
-    SAVcover = factor(SAVcover, levels = c('continuous', 'patchy', 'algae', 'none'))
+    SAVcover = factor(SAVcover, levels = c('none', 'patchy', 'continuous', 'algae'))
   ) %>% 
   summarize(
     mean_value = mean(TBNI_Score, na.rm = TRUE),
@@ -371,7 +371,6 @@ st3 <- ggplot(TBNI_sav, aes(x = SAVcover, y = mean_value)) +
         axis.text.y = element_text(colour = 'black', size = 9),
         axis.text.x = element_text(colour = 'black', angle = 45, size = 9, hjust = 1),
         strip.background = element_blank(),
-        strip.text = element_text(size = 11),
         legend.position = 'none'
   ) +
   labs(
@@ -525,7 +524,7 @@ st4 <- ggplot(BVcover2, aes(x = SAVcode, y = mean_value)) +
     aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
     width = 0.2
   ) +  # Error bars
-  facet_wrap(~segment,ncol=4)+
+  facet_wrap(~TBEP_seg,ncol=4)+
   #geom_text(aes(label = Count), colour ="black", size=3, nudge_y = 16) +
   labs(
     x = "FLUCCSCODE",
@@ -550,7 +549,7 @@ Domplot <-Dominantper2%>%
 
 st5 <- ggplot(Domplot, aes(x = SAVcode, y = perc, fill = Dominant)) +
   geom_bar (stat="identity") +  # Bar plot for percent
-  facet_wrap(~segment,ncol=4)+
+  facet_wrap(~TBEP_seg,ncol=4)+
   # geom_text(aes(label = Count), colour ="black", size=2, nudge_y = 16) + 
   labs(
     x = "FLUCCSCODE",
