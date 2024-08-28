@@ -386,6 +386,104 @@ png(here('figs/tbnisgFLUC.png'), height = 10, width = 8, family = 'serif', units
 print(sgfim)
 dev.off()
 
+
+#SAV and TBNI by FLUCCSCODE (no algae)------------------------------------------------------------------
+BVcover2 <- BVcover %>% 
+  mutate(SAVcode= factor(SAVcover, levels=c("none","patchy","continuous","algae")))%>% 
+  filter(SAVcode %in% c("none","patchy","continuous"))
+
+st4 <- ggplot(BVcover2, aes(x = SAVcode, y = mean_value)) +
+  geom_col(fill = "lightgreen") +  # Bar plot for means
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 0.2
+  ) +  # Error bars
+  facet_wrap(~TBEP_seg,ncol=4)+
+  #geom_text(aes(label = Count), colour ="black", size=3, nudge_y = 16) +
+  labs(
+    x = "FLUCCSCODE",
+    y = "Percent SAV cover",
+    title = '(a) Percent SAV cover by FLUCCSCODE',
+  )  + scale_y_continuous(limits = c(0,80),breaks=breaks_extended(4)) +
+  theme_minimal() + theme(axis.title.x = element_blank(),
+                          axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1))
+
+Dominantper <- FLUC %>%
+  group_by(Dominant,TBEP_seg,SAVcover) %>%
+  summarize(Count=n())%>%
+  mutate(perc = (Count / 1475 * 100))
+
+Dominantper2 <- Dominantper %>%
+  mutate(SAVcode= factor(SAVcover, levels=c("none","patchy","continuous","algae"))) 
+
+Domplot <-Dominantper2%>%
+  mutate(segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')))%>%
+  filter(Dominant %in% c("Algae","Halodule","Mixed/OtherSAV","Ruppia","Syringodium","Thalassia"), 
+         SAVcode %in% c("none","patchy","continuous"))
+
+st5 <- ggplot(Domplot, aes(x = SAVcode, y = perc, fill = Dominant)) +
+  geom_bar (stat="identity") +  # Bar plot for percent
+  facet_wrap(~TBEP_seg,ncol=4)+
+  # geom_text(aes(label = Count), colour ="black", size=2, nudge_y = 16) + 
+  labs(
+    x = "FLUCCSCODE",
+    y = "Percent of samples",
+    title = '(b) Dominant SAV by FLUCCSCODE',
+  ) + scale_y_continuous(limits = c(0,30),breaks=breaks_extended(4)) +
+  theme_minimal()+theme(axis.title.x = element_blank(),
+                        axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1))
+
+TBNI <- div %>% 
+  mutate(SAVcover = case_when(
+    FLUCCSCODE == 9113 ~ "patchy",
+    FLUCCSCODE == 9116 ~ "continuous",
+    FLUCCSCODE == 9121 ~ "algae",
+    TRUE ~ "none"  # Default case if none of the above
+  ))
+
+TBNI_sav <- TBNI %>% 
+  group_by(SAVcover, TBEP_seg) %>%
+  summarize(mean_value = mean(TBNI_Score, na.rm = TRUE),
+            std_error = sd(TBNI_Score, na.rm = TRUE) / sqrt(n()),
+            Count=n())
+
+TBNI_sav <- TBNI_sav%>%
+  mutate(segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')))
+TBNI_sav2<- TBNI_sav%>%
+  mutate(SAVcode= factor(SAVcover, levels=c("none","patchy","continuous","algae")))%>%
+  filter(SAVcode %in% c("none","patchy","continuous"))
+
+st6 <- ggplot(TBNI_sav2, aes(x = SAVcode, y = mean_value)) +
+  geom_line() + 
+  geom_point() +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 0.2
+  ) +  # Error bars 
+  facet_wrap(~segment, ncol = 4) +
+  theme_bw() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 9),
+        axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Tampa Bay Nekton Index',
+    x = 'FLUCCSCODE',
+    color = NULL,
+    title = '(c) TBNI by FLUCCSCODE',
+  )
+
+sgfim2 <- st4/st5/st6
+
+png(here('figs/tbnisgFLUCnoalgae.png'), height = 10, width = 8, family = 'serif', units = 'in', res = 300)
+print(sgfim2)
+dev.off()
+
 # seagrass + TBNI by year -------------------------------------------------------------------------------
 load(file = url('https://github.com/tbep-tech/tbep-os-presentations/raw/master/data/sgsegest.RData'))
 sgsegest <- sgsegest %>% 
@@ -474,6 +572,9 @@ png(here('figs/tbnisgyr.png'), height = 5, width = 7, family = 'serif', units = 
 print(tbnisgcov)
 dev.off()
 
+
+
+
 #Species contributing to community structure differences - FLUCCSCODE by bay segment-------------------
 #only summer/fall collections
 ## in progress
@@ -512,104 +613,4 @@ tbnisgcov <- p1/p2
 png(here('figs/tbnisgcov.png'), height = 5, width = 7, family = 'serif', units = 'in', res = 300)
 print(tbnisgcov)
 dev.off()
-
-#SAV and TBNI by FLUCCSCODE (no algae)------------------------------------------------------------------
-BVcover2 <- BVcover %>% 
-  mutate(SAVcode= factor(SAVcover, levels=c("none","patchy","continuous","algae")))%>% 
-  filter(SAVcode %in% c("none","patchy","continuous"))
-
-st4 <- ggplot(BVcover2, aes(x = SAVcode, y = mean_value)) +
-  geom_col(fill = "lightgreen") +  # Bar plot for means
-  geom_errorbar(
-    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
-    width = 0.2
-  ) +  # Error bars
-  facet_wrap(~TBEP_seg,ncol=4)+
-  #geom_text(aes(label = Count), colour ="black", size=3, nudge_y = 16) +
-  labs(
-    x = "FLUCCSCODE",
-    y = "Percent SAV cover",
-    title = '(a) Percent SAV cover by FLUCCSCODE',
-  )  + scale_y_continuous(limits = c(0,80),breaks=breaks_extended(4)) +
-  theme_minimal() + theme(axis.title.x = element_blank(),
-                          axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1))
-
-Dominantper <- FLUC %>%
-  group_by(Dominant,TBEP_seg,SAVcover) %>%
-  summarize(Count=n())%>%
-  mutate(perc = (Count / 1475 * 100))
-
-Dominantper2 <- Dominantper %>%
-  mutate(SAVcode= factor(SAVcover, levels=c("none","patchy","continuous","algae"))) 
-  
-Domplot <-Dominantper2%>%
-  mutate(segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')))%>%
-  filter(Dominant %in% c("Algae","Halodule","Mixed/OtherSAV","Ruppia","Syringodium","Thalassia"), 
-         SAVcode %in% c("none","patchy","continuous"))
-
-st5 <- ggplot(Domplot, aes(x = SAVcode, y = perc, fill = Dominant)) +
-  geom_bar (stat="identity") +  # Bar plot for percent
-  facet_wrap(~TBEP_seg,ncol=4)+
-  # geom_text(aes(label = Count), colour ="black", size=2, nudge_y = 16) + 
-  labs(
-    x = "FLUCCSCODE",
-    y = "Percent of samples",
-    title = '(b) Dominant SAV by FLUCCSCODE',
-  ) + scale_y_continuous(limits = c(0,30),breaks=breaks_extended(4)) +
-  theme_minimal()+theme(axis.title.x = element_blank(),
-                        axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1))
-
-TBNI <- div %>% 
-  mutate(SAVcover = case_when(
-    FLUCCSCODE == 9113 ~ "patchy",
-    FLUCCSCODE == 9116 ~ "continuous",
-    FLUCCSCODE == 9121 ~ "algae",
-    TRUE ~ "none"  # Default case if none of the above
-  ))
-
-TBNI_sav <- TBNI %>% 
-  group_by(SAVcover, TBEP_seg) %>%
-  summarize(mean_value = mean(TBNI_Score, na.rm = TRUE),
-            std_error = sd(TBNI_Score, na.rm = TRUE) / sqrt(n()),
-            Count=n())
-
-TBNI_sav <- TBNI_sav%>%
-  mutate(segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')))
-TBNI_sav2<- TBNI_sav%>%
-  mutate(SAVcode= factor(SAVcover, levels=c("none","patchy","continuous","algae")))%>%
-  filter(SAVcode %in% c("none","patchy","continuous"))
-
-st6 <- ggplot(TBNI_sav2, aes(x = SAVcode, y = mean_value)) +
-  geom_line() + 
-  geom_point() +
-  geom_errorbar(
-    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
-    width = 0.2
-  ) +  # Error bars 
-  facet_wrap(~segment, ncol = 4) +
-  theme_bw() + 
-  theme(panel.grid.minor =element_blank(),
-        panel.grid.major.x =element_blank(),
-        # plot.background = element_rect(fill = NA, color = NA),
-        axis.text.y = element_text(colour = 'black', size = 9),
-        axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1),
-        strip.background = element_blank(),
-        strip.text = element_text(size = 11),
-        legend.position = 'none'
-  ) +
-  labs(
-    y = 'Tampa Bay Nekton Index',
-    x = 'FLUCCSCODE',
-    color = NULL,
-    title = '(c) TBNI by FLUCCSCODE',
-  )
-
-sgfim2 <- st4/st5/st6
-
-png(here('figs/tbnisgFLUCnoalgae.png'), height = 10, width = 8, family = 'serif', units = 'in', res = 300)
-print(sgfim2)
-dev.off()
-
-
-
 
