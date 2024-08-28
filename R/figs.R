@@ -252,7 +252,7 @@ plot1 <- ggplot(toplo1, aes(x = reorder(SAVcover,Count), y = mean_value)) +
   theme_minimal() +
   theme(
     axis.title.x = element_blank(),
-    axis.text.x = element_blank(),, 
+    axis.text.x = element_blank(), 
     panel.grid.minor = element_blank()
   )
 
@@ -408,20 +408,17 @@ st4 <- ggplot(BVcover2, aes(x = SAVcode, y = mean_value)) +
   theme_minimal() + theme(axis.title.x = element_blank(),
                           axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1))
 
-Dominantper <- FLUC %>%
-  group_by(Dominant,TBEP_seg,SAVcover) %>%
-  summarize(Count=n())%>%
-  mutate(perc = (Count / 1475 * 100))
+Dominantper <- FLUC %>% 
+  summarize(
+    Count=n(), 
+    .by = c(Dominant, TBEP_seg, SAVcover)
+  ) %>%
+  mutate(
+    perc = (Count / 1475 * 100)
+  ) %>% 
+  filter(!Dominant %in% c('None'),!SAVcover %in% c('algae'))
 
-Dominantper2 <- Dominantper %>%
-  mutate(SAVcode= factor(SAVcover, levels=c("none","patchy","continuous","algae"))) 
-
-Domplot <-Dominantper2%>%
-  mutate(segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')))%>%
-  filter(Dominant %in% c("Algae","Halodule","Mixed/OtherSAV","Ruppia","Syringodium","Thalassia"), 
-         SAVcode %in% c("none","patchy","continuous"))
-
-st5 <- ggplot(Domplot, aes(x = SAVcode, y = perc, fill = Dominant)) +
+st5 <- ggplot(Dominantper, aes(x = SAVcover, y = perc, fill = Dominant)) +
   geom_bar (stat="identity") +  # Bar plot for percent
   facet_wrap(~TBEP_seg,ncol=4)+
   # geom_text(aes(label = Count), colour ="black", size=2, nudge_y = 16) + 
@@ -433,42 +430,40 @@ st5 <- ggplot(Domplot, aes(x = SAVcode, y = perc, fill = Dominant)) +
   theme_minimal()+theme(axis.title.x = element_blank(),
                         axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1))
 
-TBNI <- div %>% 
-  mutate(SAVcover = case_when(
-    FLUCCSCODE == 9113 ~ "patchy",
-    FLUCCSCODE == 9116 ~ "continuous",
-    FLUCCSCODE == 9121 ~ "algae",
-    TRUE ~ "none"  # Default case if none of the above
-  ))
+TBNI_sav <- div %>% 
+  mutate(
+    SAVcover = case_when(
+      FLUCCSCODE == 9113 ~ "patchy",
+      FLUCCSCODE == 9116 ~ "continuous",
+      FLUCCSCODE == 9121 ~ "algae",
+      TRUE ~ "none"  # Default case if none of the above
+    ),
+    TBEP_seg = factor(TBEP_seg, levels = segshr),
+    SAVcover = factor(SAVcover, levels = c('none', 'patchy', 'continuous', 'algae'))
+  ) %>% 
+  filter(!SAVcover %in% c('algae'))%>%
+  summarize(
+    mean_value = mean(TBNI_Score, na.rm = TRUE),
+    std_error = sd(TBNI_Score, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = c(SAVcover, TBEP_seg)
+  )
 
-TBNI_sav <- TBNI %>% 
-  group_by(SAVcover, TBEP_seg) %>%
-  summarize(mean_value = mean(TBNI_Score, na.rm = TRUE),
-            std_error = sd(TBNI_Score, na.rm = TRUE) / sqrt(n()),
-            Count=n())
-
-TBNI_sav <- TBNI_sav%>%
-  mutate(segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')))
-TBNI_sav2<- TBNI_sav%>%
-  mutate(SAVcode= factor(SAVcover, levels=c("none","patchy","continuous","algae")))%>%
-  filter(SAVcode %in% c("none","patchy","continuous"))
-
-st6 <- ggplot(TBNI_sav2, aes(x = SAVcode, y = mean_value)) +
+st6 <- ggplot(TBNI_sav, aes(x = SAVcover, y = mean_value)) +
   geom_line() + 
   geom_point() +
   geom_errorbar(
     aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
     width = 0.2
   ) +  # Error bars 
-  facet_wrap(~segment, ncol = 4) +
-  theme_bw() + 
+  facet_wrap(~TBEP_seg, ncol = 4) +
+  theme_minimal() + 
   theme(panel.grid.minor =element_blank(),
         panel.grid.major.x =element_blank(),
         # plot.background = element_rect(fill = NA, color = NA),
         axis.text.y = element_text(colour = 'black', size = 9),
-        axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 9, hjust = 1),
         strip.background = element_blank(),
-        strip.text = element_text(size = 11),
         legend.position = 'none'
   ) +
   labs(
@@ -573,8 +568,6 @@ print(tbnisgcov)
 dev.off()
 
 
-
-
 #Species contributing to community structure differences - FLUCCSCODE by bay segment-------------------
 #only summer/fall collections
 ## in progress
@@ -589,7 +582,7 @@ group_by(FLUCCSCODE) %>%
   mutate(FLUCs = factor(FLUCCSCODE, levels = c('none', 'patchy', 'continuous'))
   )
 
-sim <- ggplot(spp_sim, aes(x = factor(species), y = mean_value)) +
+sim1 <- ggplot(spp_otb, aes(x = factor(species), y = mean_value)) +
   geom_bar() + 
   facet_wrap(~FLUCCs, ncol = 3) +
   theme_minimal() + 
@@ -606,11 +599,89 @@ sim <- ggplot(spp_sim, aes(x = factor(species), y = mean_value)) +
     y = 'CPUE',
     x = 'FLUCCSCODE',
     color = NULL,
-    title = '(b) TBNI by bay segment',
+    title = '(b) Old Tampa Bay',
   )
-tbnisgcov <- p1/p2
 
-png(here('figs/tbnisgcov.png'), height = 5, width = 7, family = 'serif', units = 'in', res = 300)
-print(tbnisgcov)
+spp_hb <- SIMP %>% 
+  filter(TBEP_seg='HB')
+group_by(FLUCCSCODE) %>%
+  mutate(FLUCs = factor(FLUCCSCODE, levels = c('none', 'patchy', 'continuous'))
+  )
+
+sim2 <- ggplot(spp_hb, aes(x = factor(species), y = mean_value)) +
+  geom_bar() + 
+  facet_wrap(~FLUCCs, ncol = 3) +
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 9),
+        axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'CPUE',
+    x = 'FLUCCSCODE',
+    color = NULL,
+    title = '(b) Hillsborough Bay',
+  )
+
+spp_mtb <- SIMP %>% 
+  filter(TBEP_seg='MTB')
+group_by(FLUCCSCODE) %>%
+  mutate(FLUCs = factor(FLUCCSCODE, levels = c('none', 'patchy', 'continuous'))
+  )
+
+sim3 <- ggplot(spp_mtb, aes(x = factor(species), y = mean_value)) +
+  geom_bar() + 
+  facet_wrap(~FLUCCs, ncol = 3) +
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 9),
+        axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'CPUE',
+    x = 'FLUCCSCODE',
+    color = NULL,
+    title = '(c) Middle Tampa Bay',
+  )
+spp_ltb <- SIMP %>% 
+  filter(TBEP_seg='LTB')
+group_by(FLUCCSCODE) %>%
+  mutate(FLUCs = factor(FLUCCSCODE, levels = c('none', 'patchy', 'continuous'))
+  )
+
+sim4 <- ggplot(spp_ltb, aes(x = factor(species), y = mean_value)) +
+  geom_bar() + 
+  facet_wrap(~FLUCCs, ncol = 3) +
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 9),
+        axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'CPUE',
+    x = 'FLUCCSCODE',
+    color = NULL,
+    title = '(d) Lower Tampa Bay',
+  )
+
+simpFLUC <- sim1/sim2/sim3/sim4
+
+png(here('figs/simpFLUC.png'), height = 5, width = 7, family = 'serif', units = 'in', res = 300)
+print(simpFLUC)
 dev.off()
 
