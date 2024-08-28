@@ -271,15 +271,24 @@ st1 <- ggplot(BVcover, aes(x = reorder(SAVcover,Count), y = mean_value)) +
     x = "FLUCCSCODE",
     y = "Percent SAV cover",
     title = '(a) Percent SAV cover by FLUCCSCODE',
-  )  + scale_y_continuous(limits = c(0,100),breaks=breaks_extended(4)) +
-  theme_minimal() + theme(axis.title.x = element_blank(),
-                          axis.text.x = element_blank())
+  )  + 
+  scale_y_continuous(limits = c(0,100),breaks=breaks_extended(4)) +
+  theme_minimal() + 
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1)
+  )
 
 Dominantper <- FLUC %>% 
-  group_by(Dominant,TBEP_seg,SAVcover) %>%
-  summarize(Count=n())%>%
-  mutate(perc = (Count / 1475 * 100),
-  segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB'))) 
+  summarize(
+    Count=n(), 
+    .by = c(Dominant, TBEP_seg, SAVcover)
+  ) %>%
+  mutate(
+    perc = (Count / 1475 * 100),
+    segment = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB'))
+  ) %>% 
+  filter(!Dominant %in% c('Algae', 'None'))
 
 st2 <- ggplot(Dominantper, aes(x = reorder(SAVcover,Count), y = perc, fill = Dominant)) +
   geom_bar (stat="identity") +  # Bar plot for percent
@@ -289,9 +298,13 @@ st2 <- ggplot(Dominantper, aes(x = reorder(SAVcover,Count), y = perc, fill = Dom
     x = "FLUCCSCODE",
     y = "Percent of samples",
     title = '(b) Dominant SAV by FLUCCSCODE',
-  ) + scale_y_continuous(limits = c(0,40),breaks=breaks_extended(4)) +
-  theme_minimal()+theme(axis.title.x = element_blank(),
-                        axis.text.x = element_blank())
+  ) + 
+  scale_y_continuous(limits = c(0,30), breaks=breaks_extended(4)) +
+  theme_minimal() + 
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(colour = 'black', angle = 60, size = 9, hjust = 1)
+  )
 
 TBNI <- div %>% 
   mutate(SAVcover = case_when(
@@ -312,7 +325,6 @@ TBNI_sav <- TBNI_sav%>%
   )
 
 st3 <- ggplot(TBNI_sav, aes(x = reorder(SAVcover,Count), y = mean_value)) +
-  geom_line() + 
   geom_point() +
   geom_errorbar(
     aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
