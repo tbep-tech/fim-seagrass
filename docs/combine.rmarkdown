@@ -1,0 +1,257 @@
+---
+title: "Methods for combining FIM and seagrass data"
+format: html
+editor: source
+lightbox: true
+execute: 
+  warning: false
+  message: false
+---
+
+
+This document provides a brief summary of methods used to combine FWC FIM data for Tampa Bay with seagrass coverage data from SWFWMD.  The intent is to combine the two datasets in space and time for an assessment of how changes in seagrass coverage may be associated with changes in nekton communities.  The following provides reproducible code and proof of concept that the combined dataset is a correct spatiotemporal merge of the fisheries and seagrass data.  
+
+The data merge accomplishes the following: 
+
+1. All FIM sample locations in Tampa Bay are matched to the years when imagery was captured for a seagrass coverage assessment.  Because FIM surveys occur monthly and aerial images are captured approximately biennally, it is assumed that FIM data collected in the years prior and including the year of each aerial survey provide the best temporal match.  Further, seagrass images were assumed to be taken one year prior to the nominal year of the dataset.  For example, FIM samples in 2020 and 2021 were matched to the 2022 seagrass layer when images were from December 2021, FIM samples from 2018 and 2019 were matched to the 2020 seagrass layer, etc.
+1. After the temporal join, FIM sample points were matched in space with the seagrass coverage data from the corresponding temporal match.  Each FIM sample point was assigned a location as continuous seagrass, patchy seagrass, attached algae, or none of the previous based on the polygon from the seagrass layer where the point was located.  The attached algae category may not be accurate due to changing effort over the course of sampling.  
+1. Lastly, the seagrass management area where a point and seagrass polygon were located was also identified.  The polygon area in acres was calculated for each polygon that included a FIM sample point, as well as the total acreage of the seagrass management area. 
+
+The following packages are used and the remainder is setup. 
+
+
+```{r}
+library(tbeptools)
+library(tidyverse)
+library(here)
+library(sf)
+library(mapview)
+
+# NAD83(HARN) / Florida West (ftUS)
+# this is the projection for the seagrass segment layer from the district
+prj <- 2882
+
+# patchy, continuous, and attached algae
+flcat <-c('9113', '9116', '9121')
+
+# nominal years for seagrass layers
+sgyrs <- c('88', '90', '92', '94', '96', '99', '01', '04', '06', '08', '10', '12', '14', '16', '18', '20', '22') 
+sgyrs <- ifelse(as.numeric(sgyrs) >= 88, paste0('19', sgyrs), paste0('20', sgyrs))
+```
+
+
+The `sgmanagement` layer from tbeptools is converted to the correct projection and acreage of each polygon is calculated. 
+
+
+```{r}
+#| out-width: 100%
+# sg management areas
+mngs <- sgmanagement %>% 
+  st_transform(crs = prj) %>% 
+  mutate(
+    mngacre = as.numeric(units::set_units(st_area(.), 'acres'))
+  )
+
+mapview(mngs)
+```
+
+
+The `fimstations` layer from tbeptools is matched temporally to the seagrass years using `findInterval()`. 
+
+
+```{r}
+# fim stations, add sgyear as interval within seagrass coverage years, right closed
+# assumes coverage years are taken one year prior
+fimsta <- fimstations %>% 
+  mutate(
+    year = str_sub(Reference, 4, 7), 
+    sgyear = sgyrs[1 + findInterval(year, as.numeric(sgyrs) - 1, left.open = T)]
+  ) %>% 
+  select(-bay_segment) %>% 
+  st_transform(crs = prj)
+```
+
+
+This table shows the temporal match for the FIM years (`year`) and the seagrass years (`sgyear`).  The numbers show the count of FIM stations in each combination. 
+
+
+```{r}
+fimsta %>% 
+  st_set_geometry(NULL) %>% 
+  select(year, sgyear) %>% 
+  table
+```
+
+
+The rest of the code iterates through each year of seagrass data when FIM samples were collected.  The seagrass data are downloaded, intersected with the seagrass management layer, and then intersected with the FIM samples. 
+
+
+```{r}
+#| eval: false
+# unique seagrass years for fim data, for iterating
+fimsgyrs <- fimsta$sgyear %>% 
+  unique() 
+
+out <- NULL
+for(i in seq_along(fimsgyrs)){
+
+  cat(i, 'of', length(fimsgyrs), '\n')
+  
+  fimsgyr <- fimsgyrs[i]
+  
+  ## import seagrass file
+  
+  fl <- gsub('^19|^20', '', fimsgyr) %>% 
+    paste0('https://swfwmd-seagrass.s3.amazonaws.com/sg', ., '.zip')
+  
+  # download from s3, unzip
+  tmpdir <- here('data/tmp')
+  tmpzip <- here('data/tmp/tmp.zip')
+  dir.create(tmpdir)
+  download.file(fl, destfile = tmpzip)
+  unzip(tmpzip, exdir = tmpdir)
+  
+  # import sg shapefile
+  toimp <- list.files(tmpdir, pattern = '\\.shp$', full.names = T)
+  dat_raw <- st_read(toimp, quiet = T)
+  
+  # delete files
+  unlink(tmpdir, recursive = T)
+  
+  if(any(c('FLUCCS_CODE', 'FLUCCS_COD') %in% names(dat_raw)))
+    names(dat_raw) <- gsub('^FLUCCS\\_COD$|^FLUCCS\\_CODE$', 'FLUCCSCODE', names(dat_raw))
+  
+  # filter by fluccs, intersect with sg management areas, get acreages
+  # 9113 is patchy, 9116 is continuous
+  dat_crp <- dat_raw %>%
+    st_transform(crs = prj) %>%
+    dplyr::select(FLUCCSCODE) %>% 
+    filter(FLUCCSCODE %in% flcat) %>%
+    st_intersection(mngs) %>% 
+    summarise(
+      geometry = st_union(geometry), 
+      .by = c('FLUCCSCODE', 'areas', 'mngacre')
+    ) %>% 
+    mutate(
+      acres = as.numeric(units::set_units(st_area(.), 'acres'))
+    )
+  
+  # get fim data by sgyr
+  fimtmp <- fimsta %>% 
+    filter(sgyear == fimsgyr)
+  
+  # intersect fim stations for sgyr by dat_crp
+  fimint <- fimtmp %>% 
+    st_intersects(., dat_crp) %>% 
+    .[1:length(.)]
+  fluccsyr <- lapply(fimint, function(x) ifelse(length(x) > 0, x, NA)) %>% 
+    unlist() %>% 
+    dat_crp[., c('FLUCCSCODE', 'acres')] %>% 
+    st_set_geometry(NULL)
+  
+  # add fluccs intersect to fim stations, get sg management area for each station
+  fimout <- fimtmp %>%
+    bind_cols(fluccsyr) %>% 
+    st_intersection(mngs) %>% 
+    mutate(FLUCCSCODE = as.integer(FLUCCSCODE))
+
+  row.names(fimout) <- 1:nrow(fimout)
+  
+  out <- bind_rows(out, fimout)
+  
+}
+```
+
+
+The data are then saved as an RData object and csv file.  
+
+
+```{r}
+#| eval: false
+# save as RData object
+fimsgdat <- out
+save(fimsgdat, file = here('data/fimsgdat.RData'))
+
+# save as csv
+fimsgdat <- fimsgdat %>% 
+  st_transform(crs = 4326) %>% 
+  mutate(
+    lon = st_coordinates(.)[, 1], 
+    lat = st_coordinates(.)[, 2]
+  ) %>% 
+  st_set_geometry(NULL)
+write.csv(fimsgdat, file = here('data/fimsgdat.csv'), row.names = F)
+```
+
+
+The following map demonstrates that the intersection is correct. Click on a point to view the assignment to the seagrass layer (9113 as patchy, 9116 as continuous, 9121 as attached algae, and NA as none), the area of the assigned polygon, the assigned seagrass management area, the acreage of the seagrass management area, and the corresponding year of the seagrass coverage layer. For simplicity, only results for the 2022 seagrass data layer are shown.
+
+
+```{r}
+#| echo: false
+fimsgyr <- 2022
+  
+## import seagrass file
+
+fl <- gsub('^19|^20', '', fimsgyr) %>% 
+  paste0('https://swfwmd-seagrass.s3.amazonaws.com/sg', ., '.zip')
+
+# download from s3, unzip
+tmpdir <- here('data/tmp')
+tmpzip <- here('data/tmp/tmp.zip')
+dir.create(tmpdir)
+download.file(fl, destfile = tmpzip)
+unzip(tmpzip, exdir = tmpdir)
+
+# import sg shapefile
+toimp <- list.files(tmpdir, pattern = '\\.shp$', full.names = T)
+dat_raw <- st_read(toimp, quiet = T)
+
+# delete files
+unlink(tmpdir, recursive = T)
+
+if(any(c('FLUCCS_CODE', 'FLUCCS_COD') %in% names(dat_raw)))
+  names(dat_raw) <- gsub('^FLUCCS\\_COD$|^FLUCCS\\_CODE$', 'FLUCCSCODE', names(dat_raw))
+
+# filter by fluccs, intersect with sg management areas, get acreages
+# 9113 is patchy, 9116 is continuous
+dat_crp <- dat_raw %>%
+  st_transform(crs = prj) %>%
+  dplyr::select(FLUCCSCODE) %>% 
+  filter(FLUCCSCODE %in% flcat) %>%
+  st_intersection(mngs) %>% 
+  summarise(
+    geometry = st_union(geometry), 
+    .by = c('FLUCCSCODE', 'areas', 'mngacre')
+  ) %>% 
+  mutate(
+    acres = as.numeric(units::set_units(st_area(.), 'acres'))
+  )
+
+# get fim data by sgyr
+fimtmp <- fimsta %>% 
+  filter(sgyear == fimsgyr)
+
+# intersect fim stations for sgyr by dat_crp
+fimint <- fimtmp %>% 
+  st_intersects(., dat_crp) %>% 
+  .[1:length(.)]
+fluccsyr <- lapply(fimint, function(x) ifelse(length(x) > 0, x, NA)) %>% 
+  unlist() %>% 
+  dat_crp[., c('FLUCCSCODE', 'acres')] %>% 
+  st_set_geometry(NULL)
+
+# add fluccs intersect to fim stations, get sg management area for each station
+fimout <- fimtmp %>%
+  bind_cols(fluccsyr) %>% 
+  st_intersection(mngs) %>% 
+  mutate(FLUCCSCODE = as.integer(FLUCCSCODE))
+
+row.names(fimout) <- 1:nrow(fimout)
+```
+
+```{r}
+#| out-width: 100%
+mapview(mngs) + mapview(dat_crp, col.regions = 'red') + mapview(fimout)
+```
+

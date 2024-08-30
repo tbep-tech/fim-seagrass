@@ -1,9 +1,26 @@
+---
+title: "Logistic regression of TBNI action categories vs seagrass"
+format: 
+  html:
+    code-fold: true
+editor: source
+lightbox: true
+
+execute: 
+  warning: false
+  message: false
+  echo: true
+---
+
+```{r}
+#| label: setup
 library(tidyverse)
 library(patchwork)
 library(MASS)
 library(marginaleffects)
+library(here)
 
-dat <- read.csv('data/tbm_combined_catch_env_factors.csv')
+dat <- read.csv(here('data/tbm_combined_catch_env_factors.csv'))
 
 midscr <- 39
 
@@ -24,15 +41,25 @@ tomod <- dat %>%
     TBEP_seg = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')),
     grmid = ifelse(TBNI_Score > midscr, 1, 0)
   )
+```
 
-# simple plots of TBNI score v seagrass -------------------------------------------------------
+This document provides some examples of the likelihood of obtaining the three TBNI action categories (stay the course, caution, on alert) based on seagrass cover.  The intent is to understand potential targets for seagrass cover to obtain a desired TBNI outcome.  Whether it does that is another question.
 
+### Exploratory plots
+
+```{r}
+#| fig-height: 7
+#| fig-width: 11
+#| fig-cap: "TBNI Action categories and scores compared to seagrass cover from the FIM data or seagrass patch size from SWFWMD."
 p1 <- ggplot(tomod, aes(x = BottomVegCover, y = TBNI_Score)) + 
   geom_point(aes(color = Action), show.legend = F) + 
   scale_color_manual(values = cols) +
   geom_smooth(method = 'lm', se = F, formula = y ~ x) +
   facet_wrap(~TBEP_seg, ncol = 4) +
   theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 8)
+  ) +
   labs(
     x = 'Bottom Veg Cover (%)',
     y = 'TBNI Score'
@@ -43,7 +70,9 @@ p2 <- ggplot(tomod, aes(x = Action, y = BottomVegCover)) +
   scale_fill_manual(values = cols) +
   facet_wrap(~TBEP_seg, ncol = 4) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 8)) +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 8)
+  ) +
   labs(
     x = 'Action',
     y = 'Bottom Veg Cover (%)'
@@ -55,6 +84,9 @@ p3 <- ggplot(tomod, aes(x = acres / 1000, y = TBNI_Score)) +
   geom_smooth(method = 'lm', se = F, formula = y ~ x) +
   facet_wrap(~TBEP_seg, scales = 'free_x', ncol = 4) +
   theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 8)
+  ) +
   labs(
     x = 'Patch Acres (x1000)',
     y = 'TBNI Score'
@@ -65,17 +97,23 @@ p4 <- ggplot(tomod, aes(x = Action, y = acres / 1000)) +
   scale_fill_manual(values = cols) +
   facet_wrap(~TBEP_seg, scales = 'free_y', ncol = 4) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 8)) +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 8)
+  ) +
   labs(
     x = 'Action',
     y = 'Patch Acres (x1000)'
   )
 
 p1 + p2 + p3 + p4 + plot_layout(ncol = 2, axis_titles = 'collect')
+```
 
+### Binomial logistic regression
 
-# simple logical regression score > midscr ----------------------------------------------------
-
+```{r}
+#| fig-height: 6
+#| fig-width: 8
+#| fig-cap: !expr paste("Likelihood of obtaining a TBNI score >", midscr, " as the midpoint between all action categories based on seagrass cover from the FIM data or seagrass patch size from SWFWMD") 
 mod <- glm(grmid ~ BottomVegCover*TBEP_seg, data = tomod, family = 'binomial')
 
 trgs <- tomod %>% 
@@ -95,8 +133,8 @@ tolns <- trgs |>
 p1 <- ggplot(tolns, aes(x = BottomVegCover)) +
   geom_ribbon(aes(ymin = loval, ymax = hival), alpha = 0.2) +
   geom_line(aes(y = prd)) +
-  geom_rug(data = tomod[tomod$grmid == 0, ], aes(x = BottomVegCover), sides = 'b') +
-  geom_rug(data = tomod[tomod$grmid == 1, ], aes(x = BottomVegCover), sides = 't') +
+  geom_rug(data = tomod[tomod$grmid == 0, ], sides = 'b') +
+  geom_rug(data = tomod[tomod$grmid == 1, ], sides = 't') +
   theme_minimal() +
   theme(
     panel.grid.minor = element_blank()
@@ -129,8 +167,8 @@ tolns <- trgs |>
 p2 <- ggplot(tolns, aes(x = acres / 1000)) +
   geom_ribbon(aes(ymin = loval, ymax = hival), alpha = 0.2) +
   geom_line(aes(y = prd)) +
-  geom_rug(data = tomod[tomod$grmid == 0, ], aes(x = acres / 1000), sides = 'b') +
-  geom_rug(data = tomod[tomod$grmid == 1, ], aes(x = acres / 1000), sides = 't') +
+  geom_rug(data = tomod[tomod$grmid == 0, ], sides = 'b') +
+  geom_rug(data = tomod[tomod$grmid == 1, ], sides = 't') +
   theme_minimal() +
   theme(
     panel.grid.minor = element_blank()
@@ -145,9 +183,14 @@ p2 <- ggplot(tolns, aes(x = acres / 1000)) +
   ) 
 
 p1 + p2 + plot_layout(ncol = 1, axis_titles = 'collect')
+```
 
-# ordinal logistic regression by TBNI category ------------------------------------------------
+### Ordinal logistic regression
 
+```{r}
+#| fig-height: 7
+#| fig-width: 11
+#| fig-cap: "Likelihood of obtaining each of three TBNI action categories based on seagrass cover from the FIM data or seagrass patch size from SWFWMD."
 mod <- polr(Action ~ BottomVegCover*TBEP_seg, data = tomod, Hess = T)
 
 trgs <- tomod %>% 
@@ -267,3 +310,5 @@ p4 <- ggplot(lnprds, aes(x = acres / 1000, y = prd, fill = Action)) +
   )
 
 p1 + p2 + p3 + p4 + plot_layout(ncol = 2, guides = 'collect', axis_titles = 'collect') & theme(legend.position = 'top')
+```
+
