@@ -20,12 +20,18 @@ library(MASS)
 library(marginaleffects)
 library(here)
 
-dat <- read.csv(here('data/tbm_combined_catch_env_factors.csv'))
-
 midscr <- 39
 
 cols <- c('#CC3231', '#E9C318', '#2DC938')
 labs <- c('On Alert', 'Caution', 'Stay the Course')
+
+seglng <- c('Old Tampa Bay', 'Hillsborough Bay', 'Middle Tampa Bay', 'Lower Tampa Bay')
+segshr <- c('OTB', 'HB', 'MTB', 'LTB')
+
+##
+# by fim station
+
+dat <- read.csv(here('data/tbm_combined_catch_env_factors.csv'))
 
 tomod <- dat %>% 
   dplyr::select(Reference, month, year, Season, TBEP_seg, 
@@ -41,9 +47,41 @@ tomod <- dat %>%
     TBEP_seg = factor(TBEP_seg, levels = c('OTB', 'HB', 'MTB', 'LTB')),
     grmid = ifelse(TBNI_Score > midscr, 1, 0)
   )
+
+##
+# by segment
+
+load(file = url('https://github.com/tbep-tech/tbep-os-presentations/raw/master/data/sgsegest.RData'))
+sgdat <- sgsegest %>% 
+  filter(segment %in% seglng) %>% 
+  mutate(
+    segment = factor(segment, levels = seglng, labels = segshr)
+  )
+
+div <- read_csv(here("data/phy_tbni_sgrs.csv"))
+fimdat <- div %>% 
+  dplyr::select(
+    year = sgyear,
+    tbni = TBNI_Score,
+    segment = TBEP_seg
+    ) %>% 
+  summarize(
+    tbni = mean(tbni, na.rm = TRUE),
+    .by = c(year, segment)
+  ) %>% 
+  mutate(
+    segment = factor(segment, levels = segshr), 
+    Action = findInterval(tbni, c(32, 46)),
+    Action = factor(Action, levels = c('0', '1', '2'), labels = labs, ordered = T),
+    grmid = ifelse(tbni > midscr, 1, 0)
+  )
+
+tomodseg <- inner_join(sgdat, fimdat, by = c('segment', 'year'))
 ```
 
 This document provides some examples of the likelihood of obtaining the three TBNI action categories (stay the course, caution, on alert) based on seagrass cover.  The intent is to understand potential targets for seagrass cover to obtain a desired TBNI outcome.  Whether it does that is another question.
+
+## TBNI by FIM station
 
 ### Exploratory plots
 
@@ -312,3 +350,153 @@ p4 <- ggplot(lnprds, aes(x = acres / 1000, y = prd, fill = Action)) +
 p1 + p2 + p3 + p4 + plot_layout(ncol = 2, guides = 'collect', axis_titles = 'collect') & theme(legend.position = 'top')
 ```
 
+## TBNI by bay segment
+
+### Exploratory plots
+
+```{r}
+#| fig-height: 4
+#| fig-width: 11
+#| fig-cap: "TBNI Action categories and scores compared to seagrass acreage by bay segment"
+        
+p1 <- ggplot(tomodseg, aes(x = acres / 1000, y = tbni)) + 
+  geom_point(aes(color = Action), show.legend = F) + 
+  scale_color_manual(values = cols) +
+  geom_smooth(method = 'lm', se = F, formula = y ~ x) +
+  facet_wrap(~segment, ncol = 4, scales = 'free_x') +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 8)
+  ) +
+  labs(
+    x = 'Segment Acres (x1000)',
+    y = 'TBNI Score'
+  )
+
+p2 <- ggplot(tomodseg, aes(x = Action, y = acres / 1000)) + 
+  geom_boxplot(aes(fill = Action), show.legend = F) + 
+  scale_fill_manual(values = cols) +
+  facet_wrap(~segment, ncol = 4, scales = 'free_y') +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 8)
+  ) +
+  labs(
+    x = 'Action',
+    y = 'Segment Acres (x1000)'
+  )        
+
+p1 + p2 + plot_layout(ncol = 2, guides = 'collect', axis_titles = 'collect') & theme(legend.position = 'top')
+```
+
+### Binomial logistic regression
+
+```{r}
+#| fig-height: 3
+#| fig-width: 8
+#| fig-cap: !expr paste("Likelihood of obtaining a TBNI score >", midscr, " as the midpoint between all action categories based on seagrass acreage by bay segment") 
+
+mod <- glm(grmid ~ acres*segment, data = tomodseg, family = 'binomial')
+
+trgs <- tomodseg %>% 
+  dplyr::select(segment, acres) %>%
+  reframe(
+    acres = seq(min(acres, na.rm = T), max(acres, na.rm = T), length.out = 100),
+    .by = segment
+  )
+lnprds <- predict.glm(mod, type = 'response', newdata = trgs, se.fit = T)
+tolns <- trgs |> 
+  mutate(
+    prd = lnprds$fit,
+    hival = lnprds$fit + 1.96 * lnprds$se.fit,
+    loval = lnprds$fit - 1.96 * lnprds$se.fit
+  )
+
+p1 <- ggplot(tolns, aes(x = acres / 1000)) +
+  geom_ribbon(aes(ymin = loval, ymax = hival), alpha = 0.2) +
+  geom_line(aes(y = prd)) +
+  geom_rug(data = tomodseg[tomodseg$grmid == 0, ], sides = 'b') +
+  geom_rug(data = tomodseg[tomodseg$grmid == 1, ], sides = 't') +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+  coord_cartesian(
+    ylim = c(0, 1)
+  ) +
+  facet_wrap(~segment, ncol = 4, scales = 'free_x') +
+  labs(
+    x = 'Segment Acres (x1000)', 
+    y = paste('Probability of TBNI Score >', midscr)
+  ) 
+
+p1
+```
+
+### Ordinal logistic regression
+
+```{r}
+#| fig-height: 4
+#| fig-width: 11
+#| fig-cap: "Likelihood of obtaining each of three TBNI action categories based on seagrass acreage by bay segment."
+mod <- polr(Action ~ acres*segment, data = tomodseg, Hess = T)
+
+trgs <- tomodseg %>% 
+  dplyr::select(segment, acres) %>%
+  reframe(
+    acres = seq(min(acres, na.rm = T), max(acres, na.rm = T), length.out = 100),
+    .by = segment
+  )
+
+probs <- marginaleffects::predictions(mod, 
+                                      newdata = trgs,
+                                      type = "probs")
+lnprds <- probs %>% 
+  dplyr::select(
+    Action = group, 
+    prd = estimate, 
+    loval = conf.low, 
+    hival = conf.high, 
+    segment, 
+    acres
+  ) %>% 
+  data.frame()
+
+p1 <- ggplot(lnprds, aes(x = acres / 1000)) +
+  geom_ribbon(aes(ymin = loval, ymax = hival, fill = Action), alpha = 0.5) +
+  geom_line(aes(y = prd, color = Action), show.legend = F) +
+  scale_color_manual(values = cols) +
+  scale_fill_manual(values = cols) +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(), 
+    legend.position = 'top'
+  ) +
+  coord_cartesian(
+    ylim = c(0, 1)
+  ) +
+  facet_wrap(~segment, ncol = 4, scales = 'free_x') +
+  labs(
+    x = 'Segment Acres (x1000)', 
+    y = 'Probability of TBNI Action Category'
+  ) 
+
+# area chart
+p2 <- ggplot(lnprds, aes(x = acres / 1000, y = prd, fill = Action)) +
+  geom_area(alpha = 0.5) +
+  scale_fill_manual(values = cols) +
+  theme_minimal() +
+  theme(legend.position = 'top') +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_cartesian(
+    ylim = c(0, 1)
+  ) +
+  facet_wrap(~segment, ncol = 4, scales = 'free_x') +
+  labs(
+    x = 'Segment Acres (x1000)', 
+    y = 'Probability of TBNI Action Category'
+  )
+
+p1 + p2 + plot_layout(ncol = 2, guides = 'collect', axis_titles = 'collect') & theme(legend.position = 'top')
+```
