@@ -32,8 +32,9 @@ p1 <- ggplot(tomod, aes(x = BottomVegCover, y = TBNI_Score)) +
   scale_color_manual(values = cols) +
   geom_smooth(method = 'lm', se = F, formula = y ~ x) +
   facet_wrap(~TBEP_seg, ncol = 4) +
+  theme_minimal() +
   labs(
-    x = 'Bottom Vegetation Cover (%)',
+    x = 'Bottom Veg Cover (%)',
     y = 'TBNI Score'
   )
 
@@ -41,32 +42,36 @@ p2 <- ggplot(tomod, aes(x = Action, y = BottomVegCover)) +
   geom_boxplot(aes(fill = Action), show.legend = F) + 
   scale_fill_manual(values = cols) +
   facet_wrap(~TBEP_seg, ncol = 4) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 8)) +
   labs(
     x = 'Action',
-    y = 'Bottom Vegetation Cover (%)'
+    y = 'Bottom Veg Cover (%)'
   )
 
-
-p3 <- ggplot(tomod, aes(x = acres, y = TBNI_Score)) + 
+p3 <- ggplot(tomod, aes(x = acres / 1000, y = TBNI_Score)) + 
   geom_point(aes(color = Action), show.legend = F) + 
   scale_color_manual(values = cols) +
   geom_smooth(method = 'lm', se = F, formula = y ~ x) +
   facet_wrap(~TBEP_seg, scales = 'free_x', ncol = 4) +
+  theme_minimal() +
   labs(
-    x = 'Patch acres',
+    x = 'Patch Acres (x1000)',
     y = 'TBNI Score'
   )
 
-p4 <- ggplot(tomod, aes(x = Action, y = acres)) + 
+p4 <- ggplot(tomod, aes(x = Action, y = acres / 1000)) + 
   geom_boxplot(aes(fill = Action), show.legend = F) + 
   scale_fill_manual(values = cols) +
   facet_wrap(~TBEP_seg, scales = 'free_y', ncol = 4) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1, size = 8)) +
   labs(
     x = 'Action',
-    y = 'Patch acres'
+    y = 'Patch Acres (x1000)'
   )
 
-p1 + p2 + p3 + p4 + plot_layout(ncol = 2) & theme_minimal()
+p1 + p2 + p3 + p4 + plot_layout(ncol = 2, axis_titles = 'collect')
 
 
 # simple logical regression score > midscr ----------------------------------------------------
@@ -90,15 +95,18 @@ tolns <- trgs |>
 p1 <- ggplot(tolns, aes(x = BottomVegCover)) +
   geom_ribbon(aes(ymin = loval, ymax = hival), alpha = 0.2) +
   geom_line(aes(y = prd)) +
-  geom_rug(data = tomod[tomod$gr46 == 0, ], aes(x = BottomVegCover), sides = 'b') +
-  geom_rug(data = tomod[tomod$gr46 == 1, ], aes(x = BottomVegCover), sides = 't') +
+  geom_rug(data = tomod[tomod$grmid == 0, ], aes(x = BottomVegCover), sides = 'b') +
+  geom_rug(data = tomod[tomod$grmid == 1, ], aes(x = BottomVegCover), sides = 't') +
   theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
   coord_cartesian(
     ylim = c(0, 1)
   ) +
   facet_wrap(~TBEP_seg, ncol = 4) +
   labs(
-    x = 'Bottom Vegetation Cover (%)', 
+    x = 'Bottom Veg Cover (%)', 
     y = paste('Probability of TBNI Score >', midscr)
   ) 
 
@@ -118,22 +126,25 @@ tolns <- trgs |>
     loval = lnprds$fit - 1.96 * lnprds$se.fit
   )
 
-p2 <- ggplot(tolns, aes(x = acres)) +
+p2 <- ggplot(tolns, aes(x = acres / 1000)) +
   geom_ribbon(aes(ymin = loval, ymax = hival), alpha = 0.2) +
   geom_line(aes(y = prd)) +
-  geom_rug(data = tomod[tomod$gr46 == 0, ], aes(x = acres), sides = 'b') +
-  geom_rug(data = tomod[tomod$gr46 == 1, ], aes(x = acres), sides = 't') +
+  geom_rug(data = tomod[tomod$grmid == 0, ], aes(x = acres / 1000), sides = 'b') +
+  geom_rug(data = tomod[tomod$grmid == 1, ], aes(x = acres / 1000), sides = 't') +
   theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
   coord_cartesian(
     ylim = c(0, 1)
   ) +
   facet_wrap(~TBEP_seg, ncol = 4, scales = 'free_x') +
   labs(
-    x = 'Patch acres', 
+    x = 'Patch Acres (x1000)', 
     y = paste('Probability of TBNI Score >', midscr)
   ) 
 
-p1 + p2 + plot_layout(ncol = 1)
+p1 + p2 + plot_layout(ncol = 1, axis_titles = 'collect')
 
 # ordinal logistic regression by TBNI category ------------------------------------------------
 
@@ -160,26 +171,28 @@ lnprds <- probs %>%
   ) %>% 
   data.frame()
 
-p1 <- ggplot(lnprds, aes(x = BottomVegCover, fill = Action, color = Action)) +
-  geom_ribbon(aes(ymin = loval, ymax = hival), alpha = 0.2) +
-  geom_line(aes(y = prd)) +
-  # geom_rug(data = tomod[tomod$gr46 == 0, ], aes(x = acres), sides = 'b') +
-  # geom_rug(data = tomod[tomod$gr46 == 1, ], aes(x = acres), sides = 't') +
+p1 <- ggplot(lnprds, aes(x = BottomVegCover)) +
+  geom_ribbon(aes(ymin = loval, ymax = hival, fill = Action), alpha = 0.5) +
+  geom_line(aes(y = prd, color = Action), show.legend = F) +
   scale_color_manual(values = cols) +
   scale_fill_manual(values = cols) +
   theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(), 
+    legend.position = 'top'
+  ) +
   coord_cartesian(
     ylim = c(0, 1)
   ) +
   facet_wrap(~TBEP_seg, ncol = 4, scales = 'free_x') +
   labs(
-    x = 'Patch acres', 
-    y = 'Probability of TBNI Action Categoy'
+    x = 'Bottom Veg Cover (%)', 
+    y = 'Probability of TBNI Action Category'
   ) 
 
 # area chart
-ggplot(lnprds, aes(x = BottomVegCover, y = prd, fill = Action)) +
-  geom_area() +
+p2 <- ggplot(lnprds, aes(x = BottomVegCover, y = prd, fill = Action)) +
+  geom_area(alpha = 0.5) +
   scale_fill_manual(values = cols) +
   theme_minimal() +
   theme(legend.position = 'top') +
@@ -190,7 +203,67 @@ ggplot(lnprds, aes(x = BottomVegCover, y = prd, fill = Action)) +
   ) +
   facet_wrap(~TBEP_seg, ncol = 4, scales = 'free_x') +
   labs(
-    x = 'Bottom Vegetation Cover (%)', 
-    y = 'Probability of TBNI Action Categoy'
+    x = 'Bottom Veg Cover (%)', 
+    y = 'Probability of TBNI Action Category'
   )
-  
+
+mod <- polr(Action ~ acres*TBEP_seg, data = tomod, Hess = T)
+
+trgs <- tomod %>% 
+  dplyr::select(TBEP_seg, acres) %>%
+  reframe(
+    acres = seq(min(acres, na.rm = T), max(acres, na.rm = T), length.out = 100),
+    .by = TBEP_seg
+  )
+
+probs <- marginaleffects::predictions(mod, 
+                                      newdata = trgs,
+                                      type = "probs")
+lnprds <- probs %>% 
+  dplyr::select(
+    Action = group, 
+    prd = estimate, 
+    loval = conf.low, 
+    hival = conf.high, 
+    TBEP_seg, 
+    acres
+  ) %>% 
+  data.frame()
+
+p3 <- ggplot(lnprds, aes(x = acres / 1000)) +
+  geom_ribbon(aes(ymin = loval, ymax = hival, fill = Action), alpha = 0.5) +
+  geom_line(aes(y = prd, color = Action), show.legend = F) +
+  scale_color_manual(values = cols) +
+  scale_fill_manual(values = cols) +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(), 
+    legend.position = 'top'
+  ) +
+  coord_cartesian(
+    ylim = c(0, 1)
+  ) +
+  facet_wrap(~TBEP_seg, ncol = 4, scales = 'free_x') +
+  labs(
+    x = 'Patch Acres (x1000)', 
+    y = 'Probability of TBNI Action Category'
+  ) 
+
+# area chart
+p4 <- ggplot(lnprds, aes(x = acres / 1000, y = prd, fill = Action)) +
+  geom_area(alpha = 0.5) +
+  scale_fill_manual(values = cols) +
+  theme_minimal() +
+  theme(legend.position = 'top') +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_cartesian(
+    ylim = c(0, 1)
+  ) +
+  facet_wrap(~TBEP_seg, ncol = 4, scales = 'free_x') +
+  labs(
+    x = 'Patch Acres (x1000)', 
+    y = 'Probability of TBNI Action Category'
+  )
+
+p1 + p2 + p3 + p4 + plot_layout(ncol = 2, guides = 'collect', axis_titles = 'collect') & theme(legend.position = 'top')
