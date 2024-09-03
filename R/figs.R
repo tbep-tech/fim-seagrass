@@ -576,8 +576,8 @@ SIMP <- read_csv(here("output/SIMPER.csv"))
 
 
 spp_otb <- SIMP %>% 
-  filter(TBEP_seg='OTB')
-group_by(FLUCCSCODE) %>%
+  filter(TBEP_seg='OTB')%>%
+  group_by(FLUCCSCODE) %>%
   mutate(FLUCs = factor(FLUCCSCODE, levels = c('none', 'patchy', 'continuous'))
   )
 
