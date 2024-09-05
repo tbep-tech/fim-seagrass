@@ -2,7 +2,7 @@
 "Acanthostracion quadricornis",103,0.066,3,0.004,76,0.056,97,0.123
 "Achirus lineatus",377,0.24,229,0.27,297,0.217,51,0.065
 "Achiridae spp.",0,0,0,0,1,0.001,0,0
-"Adinia xenica",3,0.002,0,0,1,0.001,0,0
+"Fundulus xenicus",3,0.002,0,0,1,0.001,0,0
 "Aetobatus narinari",0,0,0,0,0,0,1,0.001
 "Albula spp.",1,0.001,0,0,2,0.001,1,0.001
 "Aluterus schoepfii",5,0.003,0,0,8,0.006,5,0.006
@@ -46,9 +46,9 @@
 "Cyprinodon variegatus",629,0.4,158,0.186,149,0.109,6,0.008
 "Dactyloscopus moorei",4,0.003,0,0,5,0.004,6,0.008
 "Dactyloscopidae spp.",1,0.001,0,0,0,0,0,0
-"Dasyatis americana",0,0,0,0,0,0,1,0.001
-"Dasyatis sabina",66,0.042,93,0.11,40,0.029,16,0.02
-"Dasyatis say",4,0.003,1,0.001,2,0.001,3,0.004
+"Hypanus americanus",0,0,0,0,0,0,1,0.001
+"Hypanus sabinus",66,0.042,93,0.11,40,0.029,16,0.02
+"Hypanus say",4,0.003,1,0.001,2,0.001,3,0.004
 "Diapterus auratus",1,0.001,95,0.112,0,0,9,0.011
 "Diapterus spp.",0,0,0,0,0,0,2,0.003
 "Diplectrum formosum",0,0,0,0,0,0,4,0.005
@@ -74,7 +74,7 @@
 "Gobiosoma robustum",1506,0.959,390,0.459,774,0.566,401,0.508
 "Gobiesox strumosus",8,0.005,9,0.011,3,0.002,0,0
 "Gobiosoma spp.",1326,0.844,377,0.444,776,0.568,227,0.288
-"Gymnura micrura",1,0.001,0,0,0,0,1,0.001
+"Gymnura lessae",1,0.001,0,0,0,0,1,0.001
 "Haemulon aurolineatum",0,0,0,0,2,0.001,0,0
 "Haemulon plumierii",1,0.001,0,0,24,0.018,354,0.449
 "Harengula jaguana",13546,8.623,2871,3.382,23055,16.878,19324,24.492
@@ -149,7 +149,7 @@
 "Sphoeroides spengleri",2,0.001,0,0,2,0.001,1,0.001
 "Sphyrna tiburo",1,0.001,0,0,5,0.004,1,0.001
 "Sphoeroides spp.",0,0,0,0,1,0.001,0,0
-"Stephanolepis hispidus",21,0.013,7,0.008,93,0.068,530,0.672
+"Stephanolepis hispida",21,0.013,7,0.008,93,0.068,530,0.672
 "Stephanolepis setifer",0,0,0,0,0,0,1,0.001
 "Strongylura marina",32,0.02,7,0.008,42,0.031,16,0.02
 "Strongylura notata",326,0.208,68,0.08,575,0.421,80,0.101
