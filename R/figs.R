@@ -75,6 +75,7 @@ Dominant <- FLUC %>%
     .by = c(Dominant, TBEP_seg)
   )
 
+
 # map -----------------------------------------------------------------------------------------
 
 fl1 <- paste0(tempdir(), '/sgdat1999.RData')
@@ -566,22 +567,300 @@ png(here('figs/tbnisgyr.png'), height = 5, width = 7, family = 'serif', units = 
 print(tbnisgcov)
 dev.off()
 
+#species-specific summaries------------------------------------------
+ssco_yr <- spp%>%
+  summarize(
+    mean_value = mean(Syn_scovelli, na.rm = TRUE),
+    std_error = sd(Syn_scovelli, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = c(TBEP_seg,sgyear)
+  )%>%
+  mutate(
+    segment = factor(TBEP_seg, levels = segshr)
+  )
+
+
+f1 <- ggplot(ssco_yr, aes(x = sgyear, y = mean_value), height=500) +
+  geom_line() + 
+  geom_point() +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 1
+  ) +  # Error bars 
+  facet_wrap(~segment, ncol = 4) +
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 9),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 9, hjust = 1),
+        strip.background = element_blank(),axis.title.x=element_blank(),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Number per set',
+    color = NULL,
+    title = '(a) Gulf Pipefish, Syngnathus scovelli',
+  )
+
+cneb_yr <- spp%>%
+  summarize(
+    mean_value = mean(Cyn_nebulosus, na.rm = TRUE),
+    std_error = sd(Cyn_nebulosus, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = c(TBEP_seg,sgyear)
+  )%>%
+  mutate(
+    segment = factor(TBEP_seg, levels = segshr)
+  )
+
+
+f2 <- ggplot(cneb_yr, aes(x = sgyear, y = mean_value, height=500)) +
+  geom_line() + 
+  geom_point() +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 1
+  ) +  # Error bars 
+  facet_wrap(~segment, ncol = 4) +
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 9),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 9, hjust = 1),
+        strip.background = element_blank(),axis.title.x=element_blank(),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Number per set',
+    color = NULL,
+    title = '(b) Spotted Seatrout, Cynoscion nebulosus',
+  )
+
+mgul_yr <- spp%>%
+  summarize(
+    mean_value = mean(Mic_gulosus, na.rm = TRUE),
+    std_error = sd(Mic_gulosus, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = c(TBEP_seg,sgyear)
+  )%>%
+  mutate(
+    segment = factor(TBEP_seg, levels = segshr)
+  )
+f3 <- ggplot(mgul_yr, aes(x = sgyear, y = mean_value, height=500)) +
+  geom_line() + 
+  geom_point() +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 1
+  ) +  # Error bars 
+  facet_wrap(~segment, ncol = 4) +
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 9),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 9, hjust = 1),
+        strip.background = element_blank(),axis.title.x=element_blank(),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Number per set',
+    color = NULL,
+    title = '(c) Clown Goby, Microgobius gulosus',
+  )
+
+osau_yr <- spp%>%
+  summarize(
+    mean_value = mean(Oli_saurus, na.rm = TRUE),
+    std_error = sd(Oli_saurus, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = c(TBEP_seg,sgyear)
+  )%>%
+  mutate(
+    segment = factor(TBEP_seg, levels = segshr)
+  )
+
+f4 <- ggplot(osau_yr, aes(x = sgyear, y = mean_value, height=500)) +
+  geom_line() + 
+  geom_point() +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 1
+  ) +  # Error bars 
+  facet_wrap(~segment, ncol = 4) +
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 9),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 9, hjust = 1),
+        strip.background = element_blank(),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Number per set',
+    x = 'Seagrass Assessment Year',
+    color = NULL,
+    title = '(d) Leatherjack, Oligoplites saurus',
+  )
+
+spp_yr <- f1/f2/f3/f4
+
+png(here('figs/spp_yr.png'), height = 10, width = 7, family = 'serif', units = 'in', res = 300)
+print(spp_yr)
+dev.off()
+
+#Species specific summaries, subset by OTB and summer/fall-------------------------------------
+spp_OTB <-spp%>%
+  filter(TBEP_seg=='OTB', Season %in% c("Summer","Fall"))
+
+ssco_OTB <- spp_OTB%>%
+  summarize(
+    mean_value = mean(Syn_scovelli, na.rm = TRUE),
+    std_error = sd(Syn_scovelli, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = sgyear
+  )
+
+
+sf1 <- ggplot(ssco_OTB, aes(x = sgyear, y = mean_value), height=500) +
+  geom_line() + 
+  geom_point(size=3,color="darkgreen") +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 0.2
+  ) +  # Error bars 
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 10),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 10, hjust = 1),
+        strip.background = element_blank(),axis.title.x=element_blank(),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Number per set',
+    color = NULL,
+    title = 'Gulf Pipefish'
+  )
+
+cneb_OTB <- spp_OTB%>%
+  summarize(
+    mean_value = mean(Cyn_nebulosus, na.rm = TRUE),
+    std_error = sd(Cyn_nebulosus, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = sgyear
+  )
+
+sf2 <- ggplot(cneb_OTB, aes(x = sgyear, y = mean_value, height=500)) +
+  geom_line() + 
+  geom_point(size=3,color="green") +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 0.2
+  ) +  # Error bars 
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 10),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 10, hjust = 1),
+        strip.background = element_blank(),axis.title.x=element_blank(),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Number per set',
+    color = NULL,
+    title = 'Spotted Seatrout',
+  )
+
+mgul_OTB <- spp_OTB%>%
+  summarize(
+    mean_value = mean(Mic_gulosus, na.rm = TRUE),
+    std_error = sd(Mic_gulosus, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = sgyear
+  )
+
+sf3 <- ggplot(mgul_OTB, aes(x = sgyear, y = mean_value, height=500)) +
+  geom_line() + 
+  geom_point(size=3,color="brown") +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 0.2
+  ) +  # Error bars 
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 10),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 10, hjust = 1),
+        strip.background = element_blank(),axis.title.x=element_blank(),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Number per set',
+    color = NULL,
+    title = 'Clown Goby',
+  )
+
+osau_OTB <- spp_OTB %>%
+  summarize(
+    mean_value = mean(Oli_saurus, na.rm = TRUE),
+    std_error = sd(Oli_saurus, na.rm = TRUE) / sqrt(n()),
+    Count = n(), 
+    .by = sgyear
+  )
+
+sf4 <- ggplot(osau_OTB, aes(x = sgyear, y = mean_value, height=500)) +
+  geom_line() + 
+  geom_point(size=3,color="yellow") +
+  geom_errorbar(
+    aes(ymin = mean_value - std_error, ymax = mean_value + std_error),
+    width = 0.2
+  ) +  # Error bars 
+  theme_minimal() + 
+  theme(panel.grid.minor =element_blank(),
+        panel.grid.major.x =element_blank(),
+        # plot.background = element_rect(fill = NA, color = NA),
+        axis.text.y = element_text(colour = 'black', size = 10),
+        axis.text.x = element_text(colour = 'black', angle = 45, size = 10, hjust = 1),
+        strip.background = element_blank(),
+        legend.position = 'none'
+  ) +
+  labs(
+    y = 'Number per set',
+    x = 'Seagrass Assessment Year',
+    color = NULL,
+    title = 'Leatherjack',
+  )
+
+spp_yr_OTB <- sf1/sf2/sf3/sf4
+
+png(here('figs/spp_yr_OTB.png'), height = 10, width = 5, family = 'serif', units = 'in', res = 300)
+print(spp_yr_OTB)
+dev.off()
 
 #Species contributing to community structure differences - FLUCCSCODE by bay segment-------------------
 #only summer/fall collections
 ## in progress
 
 spp_codes <- read_csv(here("data/species_codes.csv"))
-SIMP <- read_csv(here("output/SIMPER.csv"))
+SIMPER_FLUC <- read_csv(here("output/SIMPER_FLUC.csv"))
 
-
-spp_otb <- SIMP %>% 
-  filter(TBEP_seg='OTB')%>%
+tab_seg = full_join(tab1_sum,tab2_mean,by=c("spp_code"),copy=FALSE, suffix=c("_sum","_mean"), keep = FALSE, na_matches='na')
+tab_seg2 = left_join(tab_seg,spp_nm, by=c("spp_code"),copy=FALSE, keep = FALSE, na_matches='na')
+tab_seg3 <- tab_seg2 %>%
+  
+spp_otb <- SIMP_OTB %>% 
   group_by(FLUCCSCODE) %>%
   mutate(FLUCs = factor(FLUCCSCODE, levels = c('none', 'patchy', 'continuous'))
   )
 
-sim1 <- ggplot(spp_otb, aes(x = factor(species), y = mean_value)) +
+sim1 <- ggplot(SIMP_OTB, aes(x = factor(species), y = mean_value)) +
   geom_bar() + 
   facet_wrap(~FLUCCs, ncol = 3) +
   theme_minimal() + 
