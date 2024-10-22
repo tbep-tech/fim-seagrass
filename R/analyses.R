@@ -9,6 +9,7 @@ library(knitr)
 library(data.table)
 library(dplyr)
 library(MASS)
+library(emmeans)
 
 #import processed community data
 div <- read_csv(here("data/phy_tbni_sgrs.csv"))
@@ -27,11 +28,40 @@ allspp <- read_csv(here("data/tbm_combined_catch_env_factors.csv"))%>%
 ssco <- allspp %>%
   relocate(Syn_scovelli)%>%
   dplyr::select(Syn_scovelli:dissolvedO2,SAVcover)
- 
+#working on separating by bay segment
+models_dplyr <- ssco %>%
+  group_by(TBEP_seg) %>%
+  do(m1 = glm.nb(Syn_scovelli~ sgyear+Season+SAVcover+
+                   log(BottomVegCover+1)+log(HA+1)+log(TH+1)+
+                   StartDepth+temperature+salinity, data=.))
+models_summary_dplyr <- lapply(models_dplyr$m1, summary)
+models_summary_dplyr
+
+#model and lsmean estimates
 summary(m1<- glm.nb(Syn_scovelli~ sgyear+TBEP_seg+Season+SAVcover+
                       log(BottomVegCover+1)+log(HA+1)+log(TH+1)+
-                      StartDepth+temperature+salinity, data=ssco))  
-summarize(ssco, by=sgyear,mean(Syn_scovelli),)
+                      StartDepth+temperature+salinity, data=ssco))
+
+lsmeansSAV = emmeans(m1,~SAVcover)
+lsmeans_SAV <- summary(lsmeansSAV)
+pairwiseSAV <- pairs(lsmeansSAV, adjust="tukey")
+print(pairwiseSAV)
+
+lsmeansseg = emmeans(m1,~TBEP_seg)
+lsmeans_seg <- summary(lsmeansseg)
+pairwiseseg <- pairs(lsmeansseg, adjust="tukey")
+print(pairwiseseg)
+
+lsmeansyr = emmeans(m1,~sgyear)
+lsmeans_yr <- summary(lsmeansyr)
+pairwiseyr <- summary(pairs(lsmeansyr, adjust="tukey"))
+print(pairwiseyr)
+
+lsmeanssea = emmeans(m1,"Season")
+lsmeanssea = emmeans(m1,~Season)
+lsmeans_sea <- summary(lsmeanssea)
+pairwisesea <- pairs(lsmeanssea, adjust="tukey")
+print(pairwisesea)
 
 #glm for C. nebulosus-----------------------------------------------------------
 cneb <- allspp %>%
