@@ -90,7 +90,7 @@ print(cneb_pairwiseseg)
 cneb_lsmeansyr = emmeans(m2,~sgyear)
 cneb_lsmeans_yr <- summary(cneb_lsmeansyr)
 cneb_pairwiseyr <- summary(pairs(cneb_lsmeansyr, adjust="tukey"))
-print(pairwiseyr)
+print(cneb_pairwiseyr)
 
 cneb_lsmeanssea = emmeans(m2,~Season)
 cneb_lsmeans_sea <- summary(cneb_lsmeanssea)
