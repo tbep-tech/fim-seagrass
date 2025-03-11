@@ -600,8 +600,7 @@ f1 <- ggplot(ssco_yr, aes(x = sgyear, y = mean_value), height=500) +
   labs(
     y = 'Number per set',
     color = NULL,
-    title = '(a) Gulf Pipefish, Syngnathus scovelli',
-  )
+    title = expression('(a) Gulf Pipefish, '*italic(Syngnathus~scovelli)*''))
 
 cneb_yr <- spp%>%
   summarize(
@@ -635,8 +634,7 @@ f2 <- ggplot(cneb_yr, aes(x = sgyear, y = mean_value, height=500)) +
   labs(
     y = 'Number per set',
     color = NULL,
-    title = '(b) Spotted Seatrout, Cynoscion nebulosus',
-  )
+    title = expression('(b) Spotted Seatrout, '*italic(Cynoscion~nebulosus)*''))
 
 mgul_yr <- spp%>%
   summarize(
@@ -668,8 +666,7 @@ f3 <- ggplot(mgul_yr, aes(x = sgyear, y = mean_value, height=500)) +
   labs(
     y = 'Number per set',
     color = NULL,
-    title = '(c) Clown Goby, Microgobius gulosus',
-  )
+    title = expression('(c) Clown Goby, '*italic(Microgobius~gulosus)*''))
 
 osau_yr <- spp%>%
   summarize(
@@ -703,9 +700,8 @@ f4 <- ggplot(osau_yr, aes(x = sgyear, y = mean_value, height=500)) +
     y = 'Number per set',
     x = 'Seagrass Assessment Year',
     color = NULL,
-    title = '(d) Leatherjack, Oligoplites saurus',
-  )
-
+    title = expression('(d) Leatherjack, '*italic(Oligoplites~saurus)*''))
+  
 spp_yr <- f1/f2/f3/f4
 
 png(here('figs/spp_yr.png'), height = 10, width = 7, family = 'serif', units = 'in', res = 300)
