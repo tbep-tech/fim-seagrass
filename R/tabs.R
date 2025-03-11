@@ -109,7 +109,7 @@ tab_seg_FLUC <- tab_seg_FLUC%>%
 write.csv(tab_seg_FLUC, file = here('tables/tab_seg_FLUC.csv'), row.names = F)
 
 
-#Summaries by seagrass year----------------------------------------------------------------
+#Summaries by seagrass year, segment----------------------------------------------------------------
 subset <- subset(catch, select = -c(Reference,Season,areas,FLUCCSCODE,DominantVeg))
 
 group<- subset %>% 
@@ -136,7 +136,7 @@ tab6_mean <- tab6 %>%
 
 tab7_se <- tab7 %>%
   pivot_longer (cols = Aca_quadricornis:Uro_floridana, names_to = "spp_code", values_to="CPUE")%>%
-  pivot_wider (names_from = c(TBEP_seg,sgyear), values_from=CPUE)%>%
+  pivot_wider (names_from = c(sgyear), values_from=CPUE)%>%
   mutate_if(is.numeric, ~round(.,digits=3))
 
 tab_yr1 = full_join(tab6_mean,tab7_se,by=c("spp_code"),copy=FALSE, suffix=c("_mean","_se"), keep = FALSE, na_matches='na')
@@ -158,4 +158,90 @@ tab_yr <- tab_yr3%>%
   relocate(Scientificname)
   
 # save as csv
+write.csv(tab_yr, file = here('tables/tab_segyr.csv'), row.names = F)
+
+#Summaries by seagrass year----------------------------------------------------------------
+subset <- subset(catch, select = -c(Reference,Season,TBEP_seg,areas,FLUCCSCODE,DominantVeg))
+
+group<- subset %>% 
+  group_by(sgyear) 
+tab1<- group %>% 
+  summarise_all(sum) 
+
+tab2 <- group %>% 
+  summarise_all(mean)
+
+tab1_sum <- tab1 %>%
+  pivot_longer (cols = Aca_quadricornis:Uro_floridana, names_to = "spp_code", values_to="CPUE")%>%
+  pivot_wider (names_from = sgyear, values_from=CPUE)%>%
+  mutate_if(is.numeric,~round(.,digits=0))
+
+tab2_mean <- tab2 %>%
+  pivot_longer (cols = Aca_quadricornis:Uro_floridana, names_to = "spp_code", values_to="CPUE")%>%
+  pivot_wider (names_from = sgyear, values_from=CPUE)%>%
+  mutate_if(is.numeric, ~round(.,digits=3))
+
+tab_sgyr = full_join(tab1_sum,tab2_mean,by=c("spp_code"),copy=FALSE, suffix=c("_sum","_mean"), keep = FALSE, na_matches='na')
+tab_sgyr2 = left_join(tab_sgyr,spp_nm, by=c("spp_code"),copy=FALSE, keep = FALSE, na_matches='na')
+tab_sgyr3 <- tab_sgyr2 %>%
+  #convert problem and 2024 species name changes
+  mutate(Scientificname = case_when(
+    spp_code== "Ast_y_graecum"~"Astroscopus y-graecum", 
+    spp_code== "Oreo_Saroth_spp"~"Oreochromis/Sarotherodon spp.",
+    spp_code== "Adi_xenica"~"Fundulus xenicus",
+    spp_code== "Das_americana"~"Hypanus americanus",
+    spp_code== "Das_sabina"~"Hypanus sabinus",
+    spp_code== "Das_say"~"Hypanus say",
+    spp_code== "Gym_micrura"~"Gymnura lessae",
+    spp_code== "Ste_hispidus"~"Stephanolepis hispida",
+    TRUE~Scientificname))
+
+tab_yr <- tab_sgyr3%>%
+  select(-c(spp_code,spp_code_old))%>%
+  relocate(Scientificname)
+
+# save as csv
 write.csv(tab_yr, file = here('tables/tab_yr.csv'), row.names = F)
+
+#Summaries by FLUCCSCODE----------------------------------------------------------------
+subset <- subset(catch, select = -c(Reference,Season,TBEP_seg,areas,sgyear,DominantVeg))
+
+group<- subset %>% 
+  group_by(FLUCCSCODE) 
+tab1<- group %>% 
+  summarise_all(sum) 
+
+tab2 <- group %>% 
+  summarise_all(mean)
+
+tab1_sum <- tab1 %>%
+  pivot_longer (cols = Aca_quadricornis:Uro_floridana, names_to = "spp_code", values_to="CPUE")%>%
+  pivot_wider (names_from = FLUCCSCODE, values_from=CPUE)%>%
+  mutate_if(is.numeric,~round(.,digits=0))
+
+tab2_mean <- tab2 %>%
+  pivot_longer (cols = Aca_quadricornis:Uro_floridana, names_to = "spp_code", values_to="CPUE")%>%
+  pivot_wider (names_from = FLUCCSCODE, values_from=CPUE)%>%
+  mutate_if(is.numeric, ~round(.,digits=3))
+
+tab_FLC = full_join(tab1_sum,tab2_mean,by=c("spp_code"),copy=FALSE, suffix=c("_sum","_mean"), keep = FALSE, na_matches='na')
+tab_FLC2 = left_join(tab_FLC,spp_nm, by=c("spp_code"),copy=FALSE, keep = FALSE, na_matches='na')
+tab_FLC3 <- tab_FLC2 %>%
+  #convert problem and 2024 species name changes
+  mutate(Scientificname = case_when(
+    spp_code== "Ast_y_graecum"~"Astroscopus y-graecum", 
+    spp_code== "Oreo_Saroth_spp"~"Oreochromis/Sarotherodon spp.",
+    spp_code== "Adi_xenica"~"Fundulus xenicus",
+    spp_code== "Das_americana"~"Hypanus americanus",
+    spp_code== "Das_sabina"~"Hypanus sabinus",
+    spp_code== "Das_say"~"Hypanus say",
+    spp_code== "Gym_micrura"~"Gymnura lessae",
+    spp_code== "Ste_hispidus"~"Stephanolepis hispida",
+    TRUE~Scientificname))
+
+tab_FLC <- tab_FLC3%>%
+  select(-c(spp_code,spp_code_old))%>%
+  relocate(Scientificname)
+
+# save as csv
+write.csv(tab_FLC, file = here('tables/tab_FLC.csv'), row.names = F)
