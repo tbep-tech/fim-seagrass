@@ -32,8 +32,10 @@ segshr <- c('OTB', 'HB', 'MTB', 'LTB')
 
 # data used by more than one figure
 
-spp <- read_csv(here("data/tbm_combined_catch_env_factors.csv"))
-div <- read_csv(here("data/phy_tbni_sgrs.csv"))
+spp <- read_csv(here("data/tbm_combined_catch_env_factors.csv"))%>%
+  filter(year %in% c(1999:2021))
+div <- read_csv(here("data/phy_tbni_sgrs.csv"))%>%
+  filter(year %in% c(1999:2021))
 
 FLUC <- spp %>%
   #filter(FLUCCSCODE %in% c(NA,9113,9116,9121)) 
@@ -78,8 +80,8 @@ Dominant <- FLUC %>%
 
 # map -----------------------------------------------------------------------------------------
 
-fl1 <- paste0(tempdir(), '/sgdat1999.RData')
-download.file('https://github.com/tbep-tech/hmpu-workflow/raw/master/data/sgdat1999.RData', destfile = fl1)
+fl1 <- paste0(tempdir(), '/sgdat2001.RData')
+download.file('https://github.com/tbep-tech/hmpu-workflow/raw/master/data/sgdat2001.RData', destfile = fl1)
 load(file = fl1)
 
 fl2 <- paste0(tempdir(), '/sgdat2016.RData')
@@ -95,9 +97,9 @@ fimsta <- fimstations %>%
   mutate(
     yr = substr(Reference, 4, 7)
   ) %>% 
-  filter(yr %in% c(1998:2021))
+  filter(yr %in% c(1999:2021))
 
-sgdat99 <- sgdat1999 %>% 
+sgdat01 <- sgdat2001 %>% 
   filter(FLUCCSCODE %in% c(9113, 9116)) %>% 
   st_simplify(5, preserveTopology = F)
 
@@ -139,7 +141,7 @@ thm <- theme(
 
 m1 <- ggplot() + 
   ggspatial::annotation_map_tile(zoom = 11, type = 'cartolight', cachedir = system.file("rosm.cache", package = "ggspatial")) +
-  geom_sf(data = sgdat99, fill = 'darkgreen', color = NA, inherit.aes = F) +
+  geom_sf(data = sgdat01, fill = 'darkgreen', color = NA, inherit.aes = F) +
   #geom_sf(data = trnpts, color = 'black', inherit.aes = F) +
   annotation_north_arrow(location = 'tl', style = north_arrow_orienteering(fill = c('black', 'black'), text_col = NA), 
                          height = unit(0.5, "cm"), width = unit(0.5, "cm")) +
@@ -151,7 +153,7 @@ m1 <- ggplot() +
   annotation_custom(ggplotGrob(minset), xmin = bbox[3] - 0.1, xmax = bbox[3] + 0.015, ymin = bbox[4] - 0.1, ymax = bbox[4] + 0.06) + 
   coord_sf(xlim = bbox[c('xmin', 'xmax')], ylim = bbox[c('ymin', 'ymax')], crs = 4326) +
   labs(
-    subtitle = '(a) Bay segments, seagrass 1999'
+    subtitle = '(a) Bay segments, seagrass 2001'
   ) +
   thm + 
   theme(
@@ -217,7 +219,7 @@ m4 <- ggplot() +
   # annotation_custom(ggplotGrob(minset), xmin = bbox[3] - 0.1, xmax = bbox[3] + 0.015, ymin = bbox[4] - 0.1, ymax = bbox[4] + 0.06) + 
   coord_sf(xlim = bbox[c('xmin', 'xmax')], ylim = bbox[c('ymin', 'ymax')], crs = 4326) +
   labs(
-    subtitle = '(d) 21.3-m seines, 1998-2021'
+    subtitle = '(d) 21.3-m seines, 1999-2021'
   ) +
   thm + 
   theme(axis.text.y  = element_blank())
@@ -497,7 +499,7 @@ segtrgs <- tibble(
 
 toplo1 <- sgsegest %>%
   filter(!segment %in% c('BCB', 'TCB', 'MR')) %>%
-  filter(!year < 1998) %>%
+  filter(!year < 2000) %>%
   mutate(acres = acres / 1000) %>%
   mutate(segment = forcats::fct_drop(segment))
 
