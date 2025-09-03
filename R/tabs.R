@@ -22,29 +22,42 @@ spp_nm <- spp_codes %>%
   select(spp_code,Scientificname,spp_code_old)%>%
   mutate(spp_code=gsub('\\.', '', spp_code)) %>%
   mutate(spp_code=gsub('\\s', '_', spp_code))
+
+#create effort tables, number of samples per each grouping, year not needed (equal sample sizes)
+effort_seg <- catch%>%
+  count(TBEP_seg) 
+effort_FLUCCS <- catch%>%
+  count(FLUCCSCODE)
+effort_seg_FLUCCS <- catch%>%
+  count(TBEP_seg,FLUCCSCODE)
+effort_sgyear <- catch%>%
+  count(sgyear)
+effort <- catch%>%
+  count()
   
 #Summaries by bay segment----------------------------------------------------------------
-subset <- subset(catch, select = -c(Reference,Season,sgyear,areas,FLUCCSCODE,DominantVeg))
+subset<- subset(catch, select = -c(Reference,Season,sgyear,areas,FLUCCSCODE,DominantVeg))
 
-group<- subset %>% 
+group = subset%>% 
   group_by(TBEP_seg) 
-tab1<- group %>% 
-  summarise_all(sum) 
 
-tab2 <- group %>% 
-  summarise_all(mean)
+tab1<- group %>%
+   summarise_all(sum) 
 
+tab2 <- group %>%
+  summarise_all(mean) 
+ 
 tab1_sum <- tab1 %>%
   pivot_longer (cols = Aca_quadricornis:Uro_floridana, names_to = "spp_code", values_to="CPUE")%>%
   pivot_wider (names_from = TBEP_seg, values_from=CPUE)%>%
   mutate_if(is.numeric,~round(.,digits=0))
  
-tab2_mean <- tab2 %>%
+tab2_CPUE <- tab2 %>%
   pivot_longer (cols = Aca_quadricornis:Uro_floridana, names_to = "spp_code", values_to="CPUE")%>%
   pivot_wider (names_from = TBEP_seg, values_from=CPUE)%>%
   mutate_if(is.numeric, ~round(.,digits=3))
- 
-tab_seg = full_join(tab1_sum,tab2_mean,by=c("spp_code"),copy=FALSE, suffix=c("_sum","_mean"), keep = FALSE, na_matches='na')
+  
+tab_seg = full_join(tab1_sum,tab2_CPUE,by=c("spp_code"),copy=FALSE, suffix=c("_sum","_mean"), keep = FALSE, na_matches='na')
 tab_seg2 = left_join(tab_seg,spp_nm, by=c("spp_code"),copy=FALSE, keep = FALSE, na_matches='na')
 tab_seg3 <- tab_seg2 %>%
   #convert problem and 2024 species name changes
@@ -67,6 +80,8 @@ write.csv(tab_seg, file = here('tables/tab_seg.csv'), row.names = F)
 
 #Summaries by bay segment, FLUCCSCODE-------------------------------------------------------
 subset2 <- subset(catch, select = -c(Reference,Season,sgyear,areas,DominantVeg))
+effort<- catch %>%
+  count(TBEP_seg,FLUCCSCODE)
 
 group2<- subset2 %>% 
   group_by(TBEP_seg,FLUCCSCODE) 
