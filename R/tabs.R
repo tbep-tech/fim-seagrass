@@ -23,7 +23,7 @@ spp_nm <- spp_codes %>%
   mutate(spp_code=gsub('\\.', '', spp_code)) %>%
   mutate(spp_code=gsub('\\s', '_', spp_code))
 
-#create effort tables, number of samples per each grouping, year not needed (equal sample sizes)
+#create effort tables, number of samples per each grouping
 effort_seg <- catch%>%
   count(TBEP_seg) 
 effort_FLUCCS <- catch%>%
