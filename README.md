@@ -7,3 +7,5 @@ Draft abstract: [link](https://docs.google.com/document/d/1U05nENVYU1pV4EwxZWScT
 Methods for combining FIM and seagrass SWFWMD data: [link](https://tbep-tech.github.io/fim-seagrass/combine.html)
 
 Logistic regression models of TBNI action categories vs seagrass: [link](https://tbep-tech.github.io/fim-seagrass/logisticreg.html)
+
+Exploring 2024 TBNI results: [link](https://tbep-tech.github.io/fim-seagrass/tbni2024.html)
